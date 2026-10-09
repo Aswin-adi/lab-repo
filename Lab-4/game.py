@@ -33,9 +33,13 @@ def theme_color(score):
     return tuple(int(BG[i] + (warm[i] - BG[i]) * t) for i in range(3))
 
 
+FLOATERS = []  # floating score labels: [x, y, spawn_time_ms, text]
+LAST_MULT = 1  # multiplier used for the most recent barrel bonus
+
+
 def on_barrel_jumped(player, barrel):
     """Called when the player clears a barrel; add a bonus effect here."""
-    pass
+    FLOATERS.append([barrel.pos.x, barrel.pos.y - 20, pygame.time.get_ticks(), f"+{100 * LAST_MULT}"])
 
 
 def score_multiplier(score):
@@ -189,6 +193,13 @@ def draw_scene(screen, font, player, barrels, score, lives, state):
     body = pygame.Rect(0, 0, PLAYER_W, PLAYER_H)
     body.midbottom = (player.pos.x, player.pos.y)
     pygame.draw.rect(screen, (50, 180, 240), body)
+    now = pygame.time.get_ticks()
+    FLOATERS[:] = [f for f in FLOATERS if now - f[2] < 900]
+    for fx, fy, born, text in FLOATERS:
+        age = now - born
+        label = font.render(text, True, (255, 255, 120))
+        label.set_alpha(255 - int(255 * age / 900))
+        screen.blit(label, label.get_rect(center=(fx, fy - age * 0.04)))
     hud = font.render(f"Score {score}   Lives {lives}   R = reset", True, (240, 240, 240))
     screen.blit(hud, (10, 8))
     if state != "play":
